@@ -2,6 +2,7 @@ import pygame
 import random
 from pygame.locals import *
 from sys import exit
+import time
 
 from No import *
 
@@ -21,11 +22,19 @@ def createGrid(tam):
 # Gera obstáculos aleatórios no grid
 def geraAleatorio(grid, tam, p):
     g = grid
-    for l in range(tam):
-        x = random.sample(range(0, tam), int(tam * p))
-        for c in range(len(x)):
-            if (g[l][x[c]] == 0):
-                g[l][x[c]] = 3
+    for ob in range(int(p * tam * tam)):
+        x = random.randint(0, (tam - 1))
+        y = random.randint(0, (tam - 1))
+        if g[x][y] == 0:
+            g[x][y] = 3
+    return g
+
+def marcaCaminho(grid, caminho, i, f):
+    g = grid
+    if caminho:
+        for pos in caminho:
+            if (pos != i) and (pos != f):
+                g[pos[0]][pos[1]] = 4
     return g
 
 # Função para desenho do grid
@@ -39,12 +48,13 @@ def drawGrid(grid, surf, tela_w, tela_h):
                 pygame.draw.rect(surf, (178, 34, 34), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
             elif (grid[i][j] == 3):
                 pygame.draw.rect(surf, (119, 136, 153), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
+            elif (grid[i][j] == 4):
+                pygame.draw.rect(surf, (135,206,235), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
             else:
                 pygame.draw.rect(surf, (0, 0, 0), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)], 1)
 
 # Retorna False se for borda
 def testaBorda(p, tam):
-    #print(str(p) + " tam: " +str(tam))
     return ((p[0] >= 0) and (p[0] < tam)) and ((p[1] >= 0) and (p[1] < tam))
 
 # Retorna True se posição for um obstáculo
@@ -54,7 +64,9 @@ def testaObstaculo(grid, pos):
 # Retorna a lista de vizinhos de um nó
 def procuraVizinhos(grid, no, tam):
     #print ("no: "+str(no))
-    vz = [(no.pos[0]-1, no.pos[1]), (no.pos[0], no.pos[1]+1), (no.pos[0]+1, no.pos[1]), (no.pos[0], no.pos[1]-1)]
+    v_orto = [(no.pos[0]-1, no.pos[1]), (no.pos[0], no.pos[1]+1), (no.pos[0]+1, no.pos[1]), (no.pos[0], no.pos[1]-1)]
+    v_diag = [(no.pos[0]-1, no.pos[1]+1), (no.pos[0]+1, no.pos[1]+1), (no.pos[0]+1, no.pos[1]-1), (no.pos[0]-1, no.pos[1]-1)]
+    vz = v_orto + v_diag
     #print ("vz: "+str(vz))
     vizinhos = []
     for v in vz:
@@ -64,92 +76,78 @@ def procuraVizinhos(grid, no, tam):
                 vizinhos.append(nodo)
     return vizinhos
 
+caminho = []
 # Retorna o caminho encontrado
-def retornaCaminho(no_ini, no_fim):
-    final = no_fim
-    caminho = [(final.pos)]
-    while final.no_pai is not no_ini:
-        final = final.no_pai
-        caminho.append(final.pos)
+def retornaCaminho(no):
+    #print(str(no.pos))
+    caminho.append(no.pos)
+    # se o nó possui um pai chama a função recursivamente com o pai
+    if (no.no_pai is not None):
+        retornaCaminho(no.no_pai)
 
-    caminho.append(no_ini.pos)
-    caminho.reverse() #inverte para que se tenha caminho do inicio para o fim
-    return caminho
 
 # função que faz a busca A*
 def A_star(grid, no_ini, no_fim, tam):
+    ini = time.time()
     # definicao das duas filas: nós abertos e nós fechados
     filaAbertos = FilaHeap()
     filaFechados = []
 
-    filaAbertos.insere(no_ini.F, no_ini) #adiciona o nó inicial na fila de abertos
+    filaAbertos.insere(no_ini.H, no_ini) #adiciona o nó inicial na fila de abertos
     cont = 0
+
     while filaAbertos.vazia() is False:
-        no = filaAbertos.remove() # remove o elemento com F mais baixo da fila de abertos
-        filaFechados.append(no) # adiciona nó removido da fila de abertos para a fila de fechados
+        no = filaAbertos.remove() #retira da fila o elemento com menor custo f
 
-        if (no is no_fim): # se o no verificado atualmente foro o nó final finaliza e retorna o caminho
-            return retornaCaminho(no_ini, no_fim)
+        fim = time.time()
 
-        vizinhos = procuraVizinhos(grid, no, tam) # captura a lista de vizinhos alcançáveis
+        if int(fim-ini) > 30:
+            print("Tempo de processamento esgotado!")
 
-        ##### prints abaixo são apenas para debug
-        print ("filaFechados: "+str(len(filaFechados)))
-        for w in filaFechados:
-            print(str(w.pos))
+            return
+        if (no.pos == no_fim.pos): # se o no verificado atualmente foro o nó final finaliza e retorna o caminho
+            retornaCaminho(no)
+            return caminho
+        else:
+            if filaFechados:
+                no.H += filaFechados[-1].H
+            filaFechados.append(no)
+            vizinhos = procuraVizinhos(grid, no, tam) # captura a lista de vizinhos alcançáveis
 
-        print ("filaAbertos: "+str(len(filaAbertos.elementos)))
-        for z in filaAbertos.elementos:
-            print(str(z[0])+" - "+str(z[1].pos))
-
-        for x in vizinhos:
-            print("no: "+str(no.pos) + "vizinhos: " +str(x.pos))
-        ################
-
-        for v in vizinhos: # para cada vizinho alcançável, faça:
-            if v not in filaFechados: # se o nó vizinho não estiver na fila de fechados, então
-                if filaAbertos.busca(v): # testa se o vizinho está na lista de abertos
-                    if v.G > (no.G + 10): # testa se o G do vizinho sendo verificado é maior que o G do nó, se for atualiza os valores do nó
-                        v.atualizaNo(no, no_fim)
-                else: # se o vizinho n estiver na fila de abertos então atualiza o vizinho e insere ele na fila de abertos
+            for v in vizinhos: # para cada vizinho alcançável, faça:
+                if (filaAbertos.busca(v) == False) and ((v.H, v) not in filaFechados):
                     v.atualizaNo(no, no_fim)
-                    filaAbertos.insere(v.F, v)
-
-        # contador para testes, para evitar o loop infinito
-        cont +=1
-        if cont == 10:
-            break
+                    filaAbertos.insere(v.H, v)
 
 
-tam = 10
+tam = 500
 
 p_ini = (0, 0)
 p_fim = (tam-1, tam-1)
 
-no_inicial = No(p_ini)
 no_final = No(p_fim)
+no_inicial = No(p_ini)
+no_inicial.calcHeuristica(no_final)
+
 
 grid = createGrid(tam)
-grid = geraAleatorio(grid, tam, 0.2)
+grid = geraAleatorio(grid, tam, 0.30)
 
 grid[no_inicial.pos[0]][no_inicial.pos[1]] = 1
 grid[no_final.pos[0]][no_final.pos[1]] = 2
-'''
-for l in grid:
-    print(l)
-'''
-print(A_star(grid, no_inicial, no_final, tam))
+
+grid = marcaCaminho(grid, A_star(grid, no_inicial, no_final, tam), no_inicial.pos, no_final.pos)
 
 pygame.init()
 surface = pygame.display.set_mode((TELA_W, TELA_H), 0, 32)
-pygame.display.set_caption('Busca heurística - A*')
+pygame.display.set_caption('Busca A*')
 
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             exit()
     surface.fill((255, 255, 255))
-
+    #grid = marcaCaminho(grid, A_star(grid, no_inicial, no_final, tam), no_inicial.pos, no_final.pos)
     # desenha grid
     drawGrid(grid, surface, TELA_W, TELA_H)
 
