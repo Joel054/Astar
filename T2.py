@@ -49,7 +49,9 @@ def drawGrid(grid, surf, tela_w, tela_h):
             elif (grid[i][j] == 3):
                 pygame.draw.rect(surf, (119, 136, 153), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
             elif (grid[i][j] == 4):
-                pygame.draw.rect(surf, (135,206,235), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
+                pygame.draw.rect(surf, (135, 206, 235), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
+            elif (grid[i][j] == 5):
+                pygame.draw.rect(surf, (255, 69, 0), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)])
             else:
                 pygame.draw.rect(surf, (0, 0, 0), [((tela_w / n) * j), ((tela_h / n) * i), (tela_w / n), (tela_h / n)], 1)
 
@@ -120,7 +122,19 @@ def A_star(grid, no_ini, no_fim, tam):
                     filaAbertos.insere(v.H, v)
 
 
-tam = 500
+        grid[no.pos[0]][no.pos[1]] = 5
+        surface.fill((255, 255, 255))
+        drawGrid(grid, surface, TELA_W, TELA_H)
+        pygame.display.update()
+        grid[no.pos[0]][no.pos[1]] = 0
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                exit()
+        # define fps
+        pygame.time.Clock().tick(10)
+
+
+tam = 50
 
 p_ini = (0, 0)
 p_fim = (tam-1, tam-1)
@@ -131,16 +145,18 @@ no_inicial.calcHeuristica(no_final)
 
 
 grid = createGrid(tam)
-grid = geraAleatorio(grid, tam, 0.30)
+grid = geraAleatorio(grid, tam, 0.40)
 
 grid[no_inicial.pos[0]][no_inicial.pos[1]] = 1
 grid[no_final.pos[0]][no_final.pos[1]] = 2
 
-grid = marcaCaminho(grid, A_star(grid, no_inicial, no_final, tam), no_inicial.pos, no_final.pos)
+
 
 pygame.init()
 surface = pygame.display.set_mode((TELA_W, TELA_H), 0, 32)
 pygame.display.set_caption('Busca A*')
+
+grid = marcaCaminho(grid, A_star(grid, no_inicial, no_final, tam), no_inicial.pos, no_final.pos)
 
 while True:
     for event in pygame.event.get():
@@ -150,7 +166,6 @@ while True:
     #grid = marcaCaminho(grid, A_star(grid, no_inicial, no_final, tam), no_inicial.pos, no_final.pos)
     # desenha grid
     drawGrid(grid, surface, TELA_W, TELA_H)
-
     pygame.display.update()
 
     # define fps
