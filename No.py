@@ -25,9 +25,6 @@ class No(object):
         self.no_pai = no_pai
         self.H = 0 # CUSTO Heuristica
 
-        self.G = 0
-        self.F = 0
-        self.vizinhos = []
 
     # Cálculo do F
     def calcF(self):
