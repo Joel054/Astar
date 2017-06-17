@@ -32,7 +32,7 @@ class No(object):
 
     # Cálculo da heurística manhattan
     def calcHeuristica(self, no_fim):
-        self.H += sqrt((pow(no_fim.pos[0] - self.pos[0], 2)) + (pow(no_fim.pos[1] - self.pos[1], 2)))
+        self.H += sqrt(((no_fim.pos[0] - self.pos[0]) ** 2) + ((no_fim.pos[0] - self.pos[0]) ** 2))
         #self.H += abs(self.pos[0] - no_fim.pos[0]) + abs(self.pos[1] - no_fim.pos[1]) # multiplicação por 10 pra melhor vizualização apenas
 
     # Recalcula valores para o nó e atribui para ele um nó pai
